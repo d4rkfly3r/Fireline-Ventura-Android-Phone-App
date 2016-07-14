@@ -2,21 +2,27 @@ package net.d4rkfly3r.fireline.phone;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Rect;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-
 import net.d4rkfly3r.fireline.phone.dummy.DummyContent;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -30,11 +36,14 @@ import java.util.List;
  */
 public class IncidentListActivity extends AppCompatActivity {
 
+    private static final String TAG = "Fireline Incident List";
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
      */
     private boolean mTwoPane;
+    private RecyclerView mRecyclerView;
+    private String mLastData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,21 +51,37 @@ public class IncidentListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_incident_list);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        assert toolbar != null;
         setSupportActionBar(toolbar);
         toolbar.setTitle(getTitle());
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                downloadIfActiveInternet();
             }
         });
 
         View recyclerView = findViewById(R.id.incident_list);
         assert recyclerView != null;
-        setupRecyclerView((RecyclerView) recyclerView);
+        mRecyclerView = (RecyclerView) recyclerView;
+        mRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+
+            int mEvenBackground = Color.rgb(255, 255, 255);
+            int mOddBackground = Color.rgb(250, 250, 250);
+
+            @Override
+            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+                super.getItemOffsets(outRect, view, parent, state);
+                int position = parent.getChildAdapterPosition(view);
+//                view.setBackgroundResource(position % 2 == 0 ? mEvenBackground : mOddBackground);
+                view.setBackgroundColor(position % 2 == 0 ? mEvenBackground : mOddBackground);
+            }
+        });
+
+        setupRecyclerView(mRecyclerView);
 
         if (findViewById(R.id.incident_detail_container) != null) {
             // The detail container view will be present only in the
@@ -69,6 +94,49 @@ public class IncidentListActivity extends AppCompatActivity {
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
         recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(DummyContent.ITEMS));
+    }
+
+    public void downloadIfActiveInternet() {
+        if (isNetworkAvailable()) {
+            System.out.println("Building connector...");
+            final ConnectorUtil connectorUtil = new ConnectorUtil("http://fireline.ventura.org/data/fireline.json");
+            connectorUtil.setFinishedCallback(new Runnable() {
+                @Override
+                public void run() {
+                    IncidentListActivity.this.mLastData = connectorUtil.getReturnData().trim();
+                    System.out.println("Downloaded...");
+
+                    try {
+                        System.out.println("Starting JSON Parse");
+                        JSONArray incidentArray = new JSONArray(getLastData());
+                        for (int index = 0; index < incidentArray.length(); index++) {
+                            final JSONObject incident = incidentArray.getJSONObject(index);
+                            System.out.println("Parsed: " + incident);
+                            double latitude = incident.getDouble("Latitude");
+                            double longitude = incident.getDouble("Longitude");
+                            System.out.println(latitude + " | " + longitude);
+                        }
+                    } catch (JSONException e) {
+                        System.err.println(e.getMessage());
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+            connectorUtil.execute();
+        } else {
+            Log.d(TAG, "No network available!");
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null;
+    }
+
+    public String getLastData() {
+        return mLastData;
     }
 
     public class SimpleItemRecyclerViewAdapter
@@ -88,7 +156,7 @@ public class IncidentListActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, int position) {
+        public void onBindViewHolder(final ViewHolder holder, final int position) {
             holder.mItem = mValues.get(position);
             holder.mIdView.setText(mValues.get(position).id);
             holder.mContentView.setText(mValues.get(position).content);
@@ -108,7 +176,6 @@ public class IncidentListActivity extends AppCompatActivity {
                         Context context = v.getContext();
                         Intent intent = new Intent(context, IncidentDetailActivity.class);
                         intent.putExtra(IncidentDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-
                         context.startActivity(intent);
                     }
                 }
@@ -139,4 +206,5 @@ public class IncidentListActivity extends AppCompatActivity {
             }
         }
     }
+
 }

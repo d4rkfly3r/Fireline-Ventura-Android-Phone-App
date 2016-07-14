@@ -6,8 +6,6 @@
                                         android:name="net.d4rkfly3r.fireline.phone.IncidentListFragment"
                                         android:layout_width="match_parent"
                                         android:layout_height="match_parent"
-                                        android:layout_marginLeft="16dp"
-                                        android:layout_marginRight="16dp"
                                         app:layoutManager="LinearLayoutManager"
                                         tools:context="net.d4rkfly3r.fireline.phone.IncidentListActivity"
                                         tools:listitem="@layout/incident_list_content"/>
