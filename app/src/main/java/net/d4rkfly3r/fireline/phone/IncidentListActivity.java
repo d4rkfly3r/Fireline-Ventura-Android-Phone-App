@@ -18,7 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import net.d4rkfly3r.fireline.phone.dummy.DummyContent;
+import net.d4rkfly3r.fireline.phone.dummy.IncidentContent;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,6 +37,7 @@ import java.util.List;
 public class IncidentListActivity extends AppCompatActivity {
 
     private static final String TAG = "Fireline Incident List";
+    private final SimpleItemRecyclerViewAdapter mAdapter = new SimpleItemRecyclerViewAdapter(IncidentContent.ITEMS);
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
@@ -93,7 +94,7 @@ public class IncidentListActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(DummyContent.ITEMS));
+        recyclerView.setAdapter(mAdapter);
     }
 
     public void downloadIfActiveInternet() {
@@ -111,10 +112,26 @@ public class IncidentListActivity extends AppCompatActivity {
                         JSONArray incidentArray = new JSONArray(getLastData());
                         for (int index = 0; index < incidentArray.length(); index++) {
                             final JSONObject incident = incidentArray.getJSONObject(index);
-                            System.out.println("Parsed: " + incident);
-                            double latitude = incident.getDouble("Latitude");
-                            double longitude = incident.getDouble("Longitude");
-                            System.out.println(latitude + " | " + longitude);
+                            System.out.println("Parsing: " + incident);
+                            final String address = incident.getString("Address");
+                            final String block = incident.getString("Block");
+                            final String city = incident.getString("City");
+                            final String comment = incident.getString("Comment");
+                            final String incidentNumber = incident.getString("IncidentNumber");
+                            final String incidentType = incident.getString("IncidentType");
+                            final double latitude = incident.getDouble("Latitude");
+                            final double longitude = incident.getDouble("Longitude");
+                            final String responseDate = incident.getString("ResponseDate");
+                            final String status = incident.getString("Status");
+                            final String units = incident.getString("Units");
+                            final IncidentContent.IncidentItem incidentItem = new IncidentContent.IncidentItem(address, block, city, comment, incidentNumber, incidentType, latitude, longitude, responseDate, status, units);
+                            System.out.println(incidentItem);
+                            IncidentContent.addItem(incidentItem);
+                            mAdapter.notifyDataSetChanged();
+//                            mAdapter.addItem(incidentItem);
+//                            double latitude = incident.getDouble("Latitude");
+//                            double longitude = incident.getDouble("Longitude");
+//                            System.out.println(latitude + " | " + longitude);
                         }
                     } catch (JSONException e) {
                         System.err.println(e.getMessage());
@@ -142,9 +159,9 @@ public class IncidentListActivity extends AppCompatActivity {
     public class SimpleItemRecyclerViewAdapter
             extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
 
-        private final List<DummyContent.DummyItem> mValues;
+        private final List<IncidentContent.IncidentItem> mValues;
 
-        public SimpleItemRecyclerViewAdapter(List<DummyContent.DummyItem> items) {
+        public SimpleItemRecyclerViewAdapter(List<IncidentContent.IncidentItem> items) {
             mValues = items;
         }
 
@@ -155,18 +172,24 @@ public class IncidentListActivity extends AppCompatActivity {
             return new ViewHolder(view);
         }
 
+        public void addItem(IncidentContent.IncidentItem incidentItem) {
+            mValues.add(incidentItem);
+            notifyItemInserted(mValues.indexOf(incidentItem));
+        }
+
         @Override
         public void onBindViewHolder(final ViewHolder holder, final int position) {
-            holder.mItem = mValues.get(position);
-            holder.mIdView.setText(mValues.get(position).id);
-            holder.mContentView.setText(mValues.get(position).content);
+            final IncidentContent.IncidentItem incidentItem = mValues.get(position);
+            holder.mItem = incidentItem;
+            holder.mIdView.setText(incidentItem.incidentNumber);
+            holder.mContentView.setText(String.format("%s, %s", incidentItem.address, incidentItem.city));
 
             holder.mView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mTwoPane) {
                         Bundle arguments = new Bundle();
-                        arguments.putString(IncidentDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+                        arguments.putString(IncidentDetailFragment.ARG_ITEM_ID, holder.mItem.incidentNumber);
                         IncidentDetailFragment fragment = new IncidentDetailFragment();
                         fragment.setArguments(arguments);
                         getSupportFragmentManager().beginTransaction()
@@ -175,7 +198,7 @@ public class IncidentListActivity extends AppCompatActivity {
                     } else {
                         Context context = v.getContext();
                         Intent intent = new Intent(context, IncidentDetailActivity.class);
-                        intent.putExtra(IncidentDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+                        intent.putExtra(IncidentDetailFragment.ARG_ITEM_ID, holder.mItem.incidentNumber);
                         context.startActivity(intent);
                     }
                 }
@@ -191,7 +214,7 @@ public class IncidentListActivity extends AppCompatActivity {
             public final View mView;
             public final TextView mIdView;
             public final TextView mContentView;
-            public DummyContent.DummyItem mItem;
+            public IncidentContent.IncidentItem mItem;
 
             public ViewHolder(View view) {
                 super(view);
