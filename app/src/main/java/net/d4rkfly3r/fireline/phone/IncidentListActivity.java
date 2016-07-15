@@ -110,6 +110,7 @@ public class IncidentListActivity extends AppCompatActivity {
                     try {
                         System.out.println("Starting JSON Parse");
                         JSONArray incidentArray = new JSONArray(getLastData());
+                        IncidentContent.clear();
                         for (int index = 0; index < incidentArray.length(); index++) {
                             final JSONObject incident = incidentArray.getJSONObject(index);
                             System.out.println("Parsing: " + incident);
@@ -128,6 +129,7 @@ public class IncidentListActivity extends AppCompatActivity {
                             System.out.println(incidentItem);
                             IncidentContent.addItem(incidentItem);
                             mAdapter.notifyDataSetChanged();
+//                            mAdapter.notifyDataSetChanged();
 //                            mAdapter.addItem(incidentItem);
 //                            double latitude = incident.getDouble("Latitude");
 //                            double longitude = incident.getDouble("Longitude");

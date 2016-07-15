@@ -38,6 +38,11 @@ public class IncidentContent {
         ITEM_MAP.put(item.incidentNumber, item);
     }
 
+    public static void clear() {
+        ITEMS.clear();
+        ITEM_MAP.clear();
+    }
+
     /**
      * A dummy item representing a piece of content.
      */

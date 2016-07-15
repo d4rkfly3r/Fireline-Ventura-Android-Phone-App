@@ -1,8 +1,11 @@
 package net.d4rkfly3r.fireline.phone;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +13,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import net.d4rkfly3r.fireline.phone.dummy.IncidentContent;
+
+import java.util.Locale;
 
 /**
  * A fragment representing a single Incident detail screen.
@@ -53,6 +58,8 @@ public class IncidentDetailFragment extends Fragment {
             if (appBarLayout != null) {
                 appBarLayout.setTitle(mItem.address + ", " + mItem.city);
             }
+
+
         }
     }
 
@@ -61,11 +68,21 @@ public class IncidentDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.incident_detail, container, false);
 
-        // Show the dummy content as text in a TextView.
         if (mItem != null) {
             ((TextView) rootView.findViewById(R.id.incident_detail)).setText(String.format("%s\n%s\n%s", mItem.incidentType, mItem.responseDate, mItem.status));
         }
 
         return rootView;
+    }
+
+    public void updateFAB(FloatingActionButton fab) {
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String uri = String.format(Locale.ENGLISH, "geo:0,0?q=%f,%f(%s)&z=11", mItem.latitude, mItem.longitude, mItem.address + ", " + mItem.city);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+                startActivity(intent);
+            }
+        });
     }
 }
